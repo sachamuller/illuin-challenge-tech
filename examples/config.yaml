@@ -1,0 +1,4 @@
+data_loading:
+  train_path: data/squad2.0/train-v2.0.json
+  test_path: data/squad2.0/train-v2.0.json
+  drop_impossible: true
