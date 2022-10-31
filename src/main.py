@@ -10,7 +10,7 @@ def main(config):
     train_df = load_squad(config)
     # test_df = load_squad(config, test=True)
     model = load_model(config, train_df)
-    recall = model.compute_recall(0.01)
+    recall = model.compute_recall()
     print("recall :", recall)
 
 

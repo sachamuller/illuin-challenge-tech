@@ -6,8 +6,9 @@ data_loading:
 model :
   name: bm25
 
-model_properties :
+model_parameters :
   bm25 : 
     dataset_percentage: 0.01  # 0.01=868 samples if drop_impossible=True, takes ~5 minutes to compute
+    top_n : 3
 
 seed : 42
