@@ -9,6 +9,11 @@ model :
 model_parameters :
   bm25 : 
     dataset_percentage: 0.01  # 0.01=868 samples if drop_impossible=True, takes ~5 minutes to compute
-    top_n : 3
+    top_n : 10
+
+results :
+  parent_folder_path: results/
+  result_folder_name : datetime # if datetime then will be the current date and time by convention
+  exist_ok : false
 
 seed : 42
