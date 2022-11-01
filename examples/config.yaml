@@ -13,7 +13,9 @@ model_parameters :
   bert:
     pretrained_model_name: bert-base-uncased
     context_embeddings_path: results/bert_context_embeddings.pt
+    prediction_df_path: results/bert_predictions.csv
     batch_size: 2
+    dataset_percentage: 0.1
 
 results :
   parent_folder_path: results/

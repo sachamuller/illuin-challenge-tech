@@ -71,6 +71,25 @@ def load_context_embeddings(bert_model, context_dataset, config):
     return result
 
 
+def compute_scores(bert_model, question_dataset, config, context_embeddings):
+    batch_size = config["model_parameters"]["bert"]["batch_size"]
+    dataloader = DataLoader(
+        question_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+    )
+
+    for batch_idx, batch in enumerate(dataloader):
+        print(
+            f"Batch_idx : {batch_idx} / {len(question_dataset)//batch_size}", end="\r"
+        )
+        question_embeddings = bert_model(batch)
+        scores = torch.tensordot(
+            question_embeddings, torch.transpose(context_embeddings, 0, 1), dims=1
+        )
+        question_dataset.save_batch_scores(batch, scores)
+
+
 if __name__ == "__main__":
     import yaml
 
