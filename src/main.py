@@ -3,8 +3,9 @@ import sys
 import yaml
 
 from src.data_loading import load_squad_to_df, SquadContexts
-from src.models.model import load_model
 from src.results_file import create_results_folder
+from src.models.bm25 import bm25_model
+from src.models.bert import BertEmbeddings, load_context_embeddings
 
 from torch.utils.data import DataLoader
 
@@ -22,13 +23,13 @@ def main_bm25(config):
 
 def main_bert(config):
     create_results_folder(config)
-
+    print("Loading dataset...")
     dataset = SquadContexts(config)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
+    print("Loading model...")
     bert_model = BertEmbeddings(config)
-
-    # TODO : complete evaluation of BERT
+    print("Loading context embeddings...")
+    context_embeddings = load_context_embeddings(bert_model, dataset, config)
+    print(context_embeddings)
 
 
 if __name__ == "__main__":
@@ -42,6 +43,5 @@ if __name__ == "__main__":
         main_bm25(config)
     elif config["model"]["name"] == "bert":
         main_bert(config)
-    else : 
-        raise ValueError(f"Unknown model : {config["model"]["name"]}")
-
+    else:
+        raise ValueError(f"Unknown model : {config['model']['name']}")

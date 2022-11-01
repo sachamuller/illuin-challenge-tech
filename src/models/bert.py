@@ -1,5 +1,7 @@
 import torch
+from torch.utils.data import DataLoader
 from transformers import BertTokenizer, BertModel
+import os
 
 
 class BertEmbeddings(torch.nn.Module):
@@ -32,7 +34,46 @@ class BertEmbeddings(torch.nn.Module):
         )
 
 
+def load_context_embeddings(bert_model, context_dataset, config):
+    result_path = config["model_parameters"]["bert"]["context_embeddings_path"]
+
+    if os.path.exists(result_path):
+        result = torch.load(result_path)
+        # to find where is the last computed embedding (in case program was stopped in the middle),
+        # we suppose that if the sum of the composants of the embedding equals 0, it wasn't computed
+        sum_of_embeddings_per_context = list(result.sum(dim=1).numpy())
+        if 0.0 not in sum_of_embeddings_per_context:
+            return result  # means the result matrix is already completely computed
+        start_index = sum_of_embeddings_per_context.index(0.0)
+    else:
+        os.makedirs(os.path.join(*result_path.split("/")[:-1]), exist_ok=True)
+        result = torch.zeros(len(context_dataset), bert_model.output_dim)
+        start_index = 0
+
+    context_dataset.truncate_beginning(start_index)
+    batch_size = config["model_parameters"]["bert"]["batch_size"]
+    dataloader = DataLoader(
+        context_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+    )
+
+    for batch_idx, batch in enumerate(dataloader):
+        print(f"Batch_idx : {batch_idx} / {len(context_dataset)//batch_size}", end="\r")
+        embeddings = bert_model(batch)
+        result[
+            start_index
+            + batch_idx * batch_size : start_index
+            + (batch_idx + 1) * batch_size
+        ] = embeddings
+        torch.save(result, result_path)
+
+    return result
+
+
 if __name__ == "__main__":
+    import yaml
+
     config_path = "./../examples/config.yaml"
     config = yaml.safe_load(open(config_path))
 

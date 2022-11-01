@@ -4,7 +4,7 @@ data_loading:
   drop_impossible: true
 
 model :
-  name: bm25
+  name: bert
 
 model_parameters :
   bm25 : 
@@ -12,7 +12,8 @@ model_parameters :
     top_n : 10
   bert:
     pretrained_model_name: bert-base-uncased
-
+    context_embeddings_path: results/bert_context_embeddings.pt
+    batch_size: 2
 
 results :
   parent_folder_path: results/

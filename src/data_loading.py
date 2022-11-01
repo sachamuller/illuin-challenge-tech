@@ -64,6 +64,22 @@ class SquadContexts(Dataset):
     def __getitem__(self, idx):
         return self.contexts[idx]
 
+    def truncate_beginning(self, start_index):
+        self.contexts = self.contexts[start_index:]
+
+
+class SquadQuestions(Dataset):
+    def __init__(self, config, test=False):
+        data_df = load_squad_to_df(config, test)
+
+        self.question = data_df["question"]
+
+    def __len__(self):
+        return len(self.question)
+
+    def __getitem__(self, idx):
+        return self.question[idx]
+
 
 if __name__ == "__main__":
 
