@@ -1,11 +1,13 @@
 import json
+import torch
 from typing import Dict
+from torch.utils.data import Dataset
 
 import numpy as np
 import pandas as pd
 
 
-def load_squad(config: Dict, test: bool = False):
+def load_squad_to_df(config: Dict, test: bool = False):
     if not test:
         data_path = config["data_loading"]["train_path"]
     else:
@@ -50,11 +52,24 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
     return data_df
 
 
+class SquadContexts(Dataset):
+    def __init__(self, config, test=False):
+        data_df = load_squad_to_df(config, test)
+
+        self.contexts = data_df["context"].unique()
+
+    def __len__(self):
+        return len(self.contexts)
+
+    def __getitem__(self, idx):
+        return self.contexts[idx]
+
+
 if __name__ == "__main__":
 
     # Example of use
     import yaml
 
     config = yaml.safe_load(open("examples/config.yaml"))
-    data_df = load_squad(config)
+    data_df = load_squad_to_df(config)
     print(data_df)

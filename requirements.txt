@@ -1,3 +1,6 @@
 pandas==1.5.1
 PyYAML==6.0
 rank-bm25==0.2.2
+transformers==4.23.1
+torch==1.13.0
+torchvision==0.14.0

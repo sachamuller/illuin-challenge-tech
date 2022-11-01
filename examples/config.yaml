@@ -10,6 +10,9 @@ model_parameters :
   bm25 : 
     dataset_percentage: 0.01  # 0.01=868 samples if drop_impossible=True, takes ~5 minutes to compute
     top_n : 10
+  bert:
+    pretrained_model_name: bert-base-uncased
+
 
 results :
   parent_folder_path: results/
