@@ -2,9 +2,9 @@ import torch
 from transformers import BertTokenizer, BertModel
 
 
-class BERT_Model(torch.nn.Module):
+class BertEmbeddings(torch.nn.Module):
     def __init__(self, config):
-        super(BERT_Model, self).__init__()
+        super(BertEmbeddings, self).__init__()
 
         pretrained_model_name = config["model_parameters"]["bert"][
             "pretrained_model_name"

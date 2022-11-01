@@ -15,7 +15,7 @@ def main_bm25(config):
     train_df = load_squad_to_df(config)
     # test_df = load_squad_to_df(config, test=True)
     print("Loading model...")
-    model = load_model(config, train_df)
+    model = bm25_model(config, train_df)
     print("Computing recall...")
     recall = model.compute_recall()
 
@@ -26,7 +26,7 @@ def main_bert(config):
     dataset = SquadContexts(config)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
-    bert_model = load_model(config, None)
+    bert_model = BertEmbeddings(config)
 
     # TODO : complete evaluation of BERT
 
