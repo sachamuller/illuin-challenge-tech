@@ -34,10 +34,6 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
         paragraphs_level["context"].to_numpy(),
         paragraphs_level["qas"].apply(len).to_numpy(),
     )
-    repeated_context_id = np.repeat(
-        np.arange(len(paragraphs_level.index)),
-        paragraphs_level["qas"].apply(len).to_numpy(),
-    )
     repeated_twice_titles = np.repeat(
         paragraphs_level["title"].to_numpy(),
         paragraphs_level["qas"].apply(len).to_numpy(),
@@ -48,7 +44,6 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
     )  # contains question, id, answers, is_impossible and plausible_answers
     data_df["title"] = repeated_twice_titles
     data_df["context"] = repeated_context
-    data_df["context_id"] = repeated_context_id
 
     if drop_impossible:
         data_df = data_df[~data_df["is_impossible"]]
@@ -57,6 +52,11 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
             data_df["is_impossible"]
         ]["plausible_answers"]
     data_df = data_df.drop(columns=["plausible_answers"])
+
+    # A few contexts appear twice in 'paragraphs', with different questions,
+    # this is why we group by context instead of assigning an id at paragraphs level
+    # and repeating this id
+    data_df["context_id"] = data_df.groupby("context", sort=False).ngroup()
     return data_df
 
 
