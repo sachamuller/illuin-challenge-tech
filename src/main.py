@@ -1,6 +1,6 @@
 import sys
-import os
 import yaml
+import argparse
 
 from src.data_loading import load_squad_to_df
 from src.results_file import create_results_folder, adapt_path_names
@@ -10,6 +10,8 @@ from src.models.bert import (
     compute_question_embeddings,
     compute_all_scores,
     compute_metrics,
+    predict_context_for_one_question,
+    load_context_embeddings,
 )
 
 
@@ -39,6 +41,24 @@ def main_bert(config):
     compute_metrics(config, data_df, scores)
 
 
+def bert_predict(config):
+    adapt_path_names(config)
+    print("Loading model...")
+    bert_model = BertEmbeddings(config)
+    print("Loading dataset...")
+    data_df = load_squad_to_df(config)
+
+    context_embeddings = load_context_embeddings(bert_model, config, data_df)
+
+    question = input("Question : ")
+    while len(question) > 0:
+        context = predict_context_for_one_question(
+            question, context_embeddings, bert_model, config, data_df
+        )
+        print(context)
+        question = input("\nQuestion : ")
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         config_path = sys.argv[1]
@@ -46,9 +66,11 @@ if __name__ == "__main__":
         config_path = "examples/config.yaml"
     config = yaml.safe_load(open(config_path))
 
-    if config["model"]["name"] == "bm25":
-        main_bm25(config)
-    elif config["model"]["name"] == "bert":
-        main_bert(config)
-    else:
-        raise ValueError(f"Unknown model : {config['model']['name']}")
+    bert_predict(config)
+
+    # if config["model"]["name"] == "bm25":
+    #     main_bm25(config)
+    # elif config["model"]["name"] == "bert":
+    #     main_bert(config)
+    # else:
+    #     raise ValueError(f"Unknown model : {config['model']['name']}")

@@ -177,6 +177,15 @@ def compute_metrics(config, df, scores):
     print("Mean rank of true context :", df["rank_of_true_context"].mean())
 
 
+def predict_context_for_one_question(
+    question: str, context_embeddings, bert_model, config, data_df
+):
+    question_embeddings = bert_model([question])
+    score = compute_score(question_embeddings, context_embeddings)
+    predicted_context_id = score.argmax().item()
+    return data_df[data_df["context_id"] == predicted_context_id]["context"].iloc[0]
+
+
 if __name__ == "__main__":
     import yaml
 

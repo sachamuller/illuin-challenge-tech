@@ -19,7 +19,7 @@ model_parameters :
     question_embeddings_path: results/bert_question_embeddings_{train_or_test}.pt   # depending on the value of evaluate_on_train_or_test
     prediction_df_path: results/bert_predictions.csv
     batch_size: 2
-    dataset_percentage: 0.01
+    dataset_percentage: 1.0
     compute_more_question_embeddings: true # if set to false, the program will compute question embeddings only if none are pre-saved
 
 results :
