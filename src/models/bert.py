@@ -90,14 +90,13 @@ def compute_question_embeddings(bert_model, config, data_df):
         result = torch.load(result_path)
         question_dataset.reduce_to_sample(
             config["model_parameters"]["bert"]["dataset_percentage"],
-            config["model_parameters"]["bert"]["new_samples_only"],
             result,
         )
     else:
         question_dataset.reduce_to_sample(
             config["model_parameters"]["bert"]["dataset_percentage"],
-            config["model_parameters"]["bert"]["new_samples_only"],
         )
+        result = torch.zeros(len(question_dataset.full_df.index), bert_model.output_dim)
 
     batch_size = config["model_parameters"]["bert"]["batch_size"]
     dataloader = DataLoader(
@@ -105,7 +104,6 @@ def compute_question_embeddings(bert_model, config, data_df):
         batch_size=batch_size,
         shuffle=False,
     )
-    result = torch.zeros(len(question_dataset.full_df.index), bert_model.output_dim)
 
     for batch_idx, batch in enumerate(dataloader):
         print(

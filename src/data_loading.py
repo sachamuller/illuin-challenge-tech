@@ -87,6 +87,7 @@ class SquadQuestions(Dataset):
         self.full_df = data_df
 
         self.random_state = config["seed"]
+        self.sample_df = self.full_df
 
     def __len__(self):
         return len(self.sample_df.index)
@@ -96,7 +97,7 @@ class SquadQuestions(Dataset):
 
     def reduce_to_sample(self, frac, previous_scores=None):
         if previous_scores is None:
-            self.full_df = self.full_df.sample(
+            self.sample_df = self.full_df.sample(
                 frac=frac, random_state=self.random_state
             )
         else:
@@ -108,7 +109,7 @@ class SquadQuestions(Dataset):
                 for idx in self.full_df.index
                 if idx not in questions_idx_with_computed_score
             ]
-            self.full_df = self.full_df.loc[
+            self.sample_df = self.full_df.loc[
                 questions_idx_with_NO_computed_score
             ].sample(frac=frac, random_state=self.random_state)
 

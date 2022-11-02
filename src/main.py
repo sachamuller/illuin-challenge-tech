@@ -31,7 +31,7 @@ def main_bert(config):
     print("Loading dataset...")
     data_df = load_squad_to_df(config)
 
-    if config["model_parameters"]["bert"]["always_compute_questions_embeddings"]:
+    if config["model_parameters"]["bert"]["compute_more_question_embeddings"]:
         compute_question_embeddings(bert_model, config, data_df)
 
     scores = compute_all_scores(bert_model, config, data_df)

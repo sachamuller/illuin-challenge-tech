@@ -1,9 +1,9 @@
 data_loading:
-  evaluate_on_train_or_test: train  # can take values 'train' or 'test'
-  # train_path: data/squad1.1/train-v1.1.json
-  # test_path: data/squad1.1/dev-v1.1.json
-  train_path: data/squad2.0/train-v2.0.json
-  test_path: data/squad2.0/dev-v2.0.json
+  evaluate_on_train_or_test: test  # can take values 'train' or 'test'
+  train_path: data/squad1.1/train-v1.1.json
+  test_path: data/squad1.1/dev-v1.1.json
+  # train_path: data/squad2.0/train-v2.0.json
+  # test_path: data/squad2.0/dev-v2.0.json
   drop_impossible: true
 
 model :
@@ -17,12 +17,10 @@ model_parameters :
     pretrained_model_name: bert-base-uncased
     context_embeddings_path: results/bert_context_embeddings_{train_or_test}.pt     # {train_or_test} will be replaced by train or test
     question_embeddings_path: results/bert_question_embeddings_{train_or_test}.pt   # depending on the value of evaluate_on_train_or_test
-    # similarity_score_path: results/bert_similarity_score.pt
     prediction_df_path: results/bert_predictions.csv
     batch_size: 2
-    dataset_percentage: 0.0001
-    new_samples_only: true
-    always_compute_questions_embeddings: false # if set to false, the program will compute question embeddings only if none are pre-saved
+    dataset_percentage: 0.01
+    compute_more_question_embeddings: true # if set to false, the program will compute question embeddings only if none are pre-saved
 
 results :
   parent_folder_path: results/
