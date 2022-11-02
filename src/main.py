@@ -3,7 +3,7 @@ import os
 import yaml
 
 from src.data_loading import load_squad_to_df, SquadContexts, SquadQuestions
-from src.results_file import create_results_folder
+from src.results_file import create_results_folder, adapt_path_names
 from src.models.bm25 import bm25_model
 from src.models.bert import (
     BertEmbeddings,
@@ -25,7 +25,7 @@ def main_bm25(config):
 
 
 def main_bert(config):
-    create_results_folder(config)
+    adapt_path_names(config)
     print("Loading model...")
     bert_model = BertEmbeddings(config)
     print("Loading context embeddings...")
