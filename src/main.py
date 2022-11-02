@@ -26,7 +26,7 @@ def main_bm25(config):
     recall = model.compute_recall()
 
 
-def main_bert(config):
+def evaluate_bert(config):
     adapt_path_names(config)
     print("Loading model...")
     bert_model = BertEmbeddings(config)
@@ -59,18 +59,21 @@ def bert_predict(config):
         question = input("\nQuestion : ")
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--config_path", type=str, default="examples/config.yaml")
+parser.add_argument("--predict", action="store_true")
+parser.add_argument("--evaluate", dest="predict", action="store_false")
+parser.set_defaults(predict=True)
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        config_path = sys.argv[1]
+    args = parser.parse_args()
+    config = yaml.safe_load(open(args.config_path))
+
+    if config["model"]["name"] == "bm25":
+        main_bm25(config)
+    elif config["model"]["name"] == "bert":
+        if args.predict:
+            bert_predict(config)
+        else:
+            evaluate_bert(config)
     else:
-        config_path = "examples/config.yaml"
-    config = yaml.safe_load(open(config_path))
-
-    bert_predict(config)
-
-    # if config["model"]["name"] == "bm25":
-    #     main_bm25(config)
-    # elif config["model"]["name"] == "bert":
-    #     main_bert(config)
-    # else:
-    #     raise ValueError(f"Unknown model : {config['model']['name']}")
+        raise ValueError(f"Unknown model : {config['model']['name']}")
