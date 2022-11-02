@@ -4,15 +4,14 @@ data_loading:
   test_path: data/squad1.1/dev-v1.1.json
   # train_path: data/squad2.0/train-v2.0.json
   # test_path: data/squad2.0/dev-v2.0.json
-  drop_impossible: true
+  drop_impossible: true  # only useful for squad2.0 : whether to drop the impossible questions or not
 
 model :
-  name: bert
+  name: bm25
 
 model_parameters :
   bm25 : 
-    dataset_percentage: 0.01  # 0.01=868 samples if drop_impossible=True, takes ~5 minutes to compute
-    top_n : 10
+    dataset_percentage: 0.01  # for the test set, 0.01=106 samples, takes a few seconds to compute
   bert:
     pretrained_model_name: bert-base-uncased
     context_embeddings_path: results/bert_context_embeddings_{train_or_test}.pt     # {train_or_test} will be replaced by train or test
@@ -22,9 +21,7 @@ model_parameters :
     dataset_percentage: 1.0
     compute_more_question_embeddings: true # if set to false, the program will compute question embeddings only if none are pre-saved
 
-results :
-  parent_folder_path: results/
-  result_folder_name : datetime # if datetime then will be the current date and time by convention
-  exist_ok : false
+metrics : 
+  list_top_k: [1, 5, 10]  # during evaluation, will print the number of questions for which the true context is in the top k predicted contexts
 
 seed : 42

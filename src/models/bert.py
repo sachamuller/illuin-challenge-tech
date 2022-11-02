@@ -170,9 +170,10 @@ def compute_metrics(config, df, scores):
     )[1]
 
     total = len(questions_idx_with_computed_score)
-    for i in [1, 5, 10]:
+    for i in config["metrics"]["list_top_k"]:
         print(
-            f"True context in first {i}th contexts : {len(df[df['rank_of_true_context'] < i])} / {total}   ({len(df[df['rank_of_true_context'] < i])/total * 100}%)"
+            f"True context in first {i}th contexts : {len(df[df['rank_of_true_context'] < i])} \
+/ {total}   ({round(len(df[df['rank_of_true_context'] < i])/total * 100, 2)}%)"
         )
     print("Mean rank of true context :", df["rank_of_true_context"].mean())
 

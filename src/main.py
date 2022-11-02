@@ -3,7 +3,7 @@ import yaml
 import argparse
 
 from src.data_loading import load_squad_to_df
-from src.results_file import create_results_folder, adapt_path_names
+from src.results_file import adapt_path_names
 from src.models.bm25 import bm25_model
 from src.models.bert import (
     BertEmbeddings,
@@ -16,14 +16,13 @@ from src.models.bert import (
 
 
 def main_bm25(config):
-    create_results_folder(config)
     print("Loading dataset...")
     train_df = load_squad_to_df(config)
     # test_df = load_squad_to_df(config, test=True)
     print("Loading model...")
     model = bm25_model(config, train_df)
     print("Computing recall...")
-    recall = model.compute_recall()
+    model.compute_recall()
 
 
 def evaluate_bert(config):
