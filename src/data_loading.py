@@ -63,6 +63,7 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
     # this is why we group by context instead of assigning an id at paragraphs level
     # and repeating this id
     data_df["context_id"] = data_df.groupby("context", sort=False).ngroup()
+    data_df = data_df.reset_index()
     return data_df
 
 

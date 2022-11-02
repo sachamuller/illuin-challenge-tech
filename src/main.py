@@ -27,29 +27,29 @@ def main_bm25(config):
 
 def main_bert(config):
     adapt_path_names(config)
-    print("Loading model...")
-    bert_model = BertEmbeddings(config)
-    print("Loading context embeddings...")
-    context_embeddings = load_context_embeddings(bert_model, config)
+    # print("Loading model...")
+    # bert_model = BertEmbeddings(config)
+    # print("Loading context embeddings...")
+    # context_embeddings = load_context_embeddings(bert_model, config)
 
-    print("Loading context embeddings...")
-    context_embeddings = load_context_embeddings(bert_model, config)
+    # print("Loading context embeddings...")
+    # context_embeddings = load_context_embeddings(bert_model, config)
 
-    bert_predictions_path = config["model_parameters"]["bert"]["prediction_df_path"]
-    if config["model_parameters"]["bert"][
-        "always_compute_questions_embeddings"
-    ] or not os.path.exists(bert_predictions_path):
-        print("Loading question embeddings...")
-        questions = SquadQuestions(config)
-        questions.reduce_to_sample(
-            config["model_parameters"]["bert"]["dataset_percentage"],
-            config["model_parameters"]["bert"]["new_samples_only"],
-        )
-        compute_question_embeddings(bert_model, questions, config, context_embeddings)
+    # bert_predictions_path = config["model_parameters"]["bert"]["prediction_df_path"]
+    # if config["model_parameters"]["bert"][
+    #     "always_compute_questions_embeddings"
+    # ] or not os.path.exists(bert_predictions_path):
+    #     print("Loading question embeddings...")
+    #     questions = SquadQuestions(config)
+    #     questions.reduce_to_sample(
+    #         config["model_parameters"]["bert"]["dataset_percentage"],
+    #         config["model_parameters"]["bert"]["new_samples_only"],
+    #     )
+    #     compute_question_embeddings(bert_model, questions, config, context_embeddings)
 
-    compute_scores(config)
+    scores = compute_scores(config)
     print("Metrics :")
-    # compute_metrics(config)
+    compute_metrics(config, scores)
 
 
 if __name__ == "__main__":

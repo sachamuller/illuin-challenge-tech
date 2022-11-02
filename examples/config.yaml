@@ -1,7 +1,9 @@
 data_loading:
-  evaluate_on_train_or_test: test  # can take values 'train' or 'test'
-  train_path: data/squad1.1/train-v1.1.json
-  test_path: data/squad1.1/dev-v1.1.json
+  evaluate_on_train_or_test: train  # can take values 'train' or 'test'
+  # train_path: data/squad1.1/train-v1.1.json
+  # test_path: data/squad1.1/dev-v1.1.json
+  train_path: data/squad2.0/train-v2.0.json
+  test_path: data/squad2.0/dev-v2.0.json
   drop_impossible: true
 
 model :
