@@ -68,8 +68,7 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
 
 
 class SquadContexts(Dataset):
-    def __init__(self, config):
-        data_df = load_squad_to_df(config)
+    def __init__(self, data_df):
 
         self.contexts = data_df["context"].unique()
 
@@ -84,25 +83,10 @@ class SquadContexts(Dataset):
 
 
 class SquadQuestions(Dataset):
-    def __init__(self, config, test=False):
-        self.save_path = config["model_parameters"]["bert"]["prediction_df_path"]
-
-        if os.path.exists(self.save_path):
-            self.full_df = pd.read_csv(
-                self.save_path,
-            )
-            self.full_df["scores"] = self.full_df["scores"].apply(
-                lambda x: eval(x) if isinstance(x, str) else x
-            )
-        else:
-            data_df = load_squad_to_df(config, test)
-            self.full_df = data_df[["question", "context", "context_id"]]
-            self.full_df["scores"] = np.nan
-            self.full_df["scores"] = self.full_df["scores"].astype("object")
+    def __init__(self, config, data_df):
+        self.full_df = data_df
 
         self.random_state = config["seed"]
-
-        self.sample_df = self.full_df
 
     def __len__(self):
         return len(self.sample_df.index)
@@ -110,24 +94,23 @@ class SquadQuestions(Dataset):
     def __getitem__(self, idx):
         return self.sample_df.iloc[idx].name, self.sample_df["question"].iloc[idx]
 
-    def reduce_to_sample(self, frac, new_samples=True):
-        if new_samples:
-            self.sample_df = self.full_df[self.full_df["scores"].isna()].sample(
+    def reduce_to_sample(self, frac, previous_scores=None):
+        if previous_scores is None:
+            self.full_df = self.full_df.sample(
                 frac=frac, random_state=self.random_state
             )
         else:
-            self.sample_df = self.full_df.sample(
-                frac=frac, random_state=self.random_state
+            questions_idx_with_computed_score = list(
+                previous_scores.sum(dim=1).nonzero().squeeze().numpy()
             )
-
-    def save_batch_scores(self, questions_batch, scores):
-        for i, question in enumerate(questions_batch):
-            question_idx = self.full_df.index[
-                self.full_df["question"] == question
-            ].item()
-            self.full_df.at[question_idx, "scores"] = list(scores[i].numpy())
-
-        self.full_df.to_csv(self.save_path, index=False)
+            questions_idx_with_NO_computed_score = [
+                idx
+                for idx in self.full_df.index
+                if idx not in questions_idx_with_computed_score
+            ]
+            self.full_df = self.full_df.loc[
+                questions_idx_with_NO_computed_score
+            ].sample(frac=frac, random_state=self.random_state)
 
 
 if __name__ == "__main__":

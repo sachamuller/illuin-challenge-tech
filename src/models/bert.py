@@ -4,7 +4,7 @@ from transformers import BertTokenizer, BertModel
 import os
 import numpy as np
 import pandas as pd
-from src.data_loading import SquadContexts, load_squad_to_df
+from src.data_loading import SquadQuestions, SquadContexts, load_squad_to_df
 
 
 class BertEmbeddings(torch.nn.Module):
@@ -37,7 +37,9 @@ class BertEmbeddings(torch.nn.Module):
         )
 
 
-def load_context_embeddings(bert_model, config):
+def load_context_embeddings(bert_model, config, data_df):
+    print("Loading context embeddings...")
+
     result_path = config["model_parameters"]["bert"]["context_embeddings_path"]
 
     if os.path.exists(result_path):
@@ -49,11 +51,11 @@ def load_context_embeddings(bert_model, config):
             return result  # means the result matrix is already completely computed
 
         # If we need to continue from the middle :
-        context_dataset = SquadContexts(config)
+        context_dataset = SquadContexts(data_df)
         start_index = sum_of_embeddings_per_context.index(0.0)
 
     else:
-        context_dataset = SquadContexts(config)
+        context_dataset = SquadContexts(data_df)
         os.makedirs(os.path.join(*result_path.split("/")[:-1]), exist_ok=True)
         result = torch.zeros(len(context_dataset), bert_model.output_dim)
         start_index = 0
@@ -79,10 +81,23 @@ def load_context_embeddings(bert_model, config):
     return result
 
 
-def compute_question_embeddings(
-    bert_model, question_dataset, config, context_embeddings
-):
+def compute_question_embeddings(bert_model, config, data_df):
+
     result_path = config["model_parameters"]["bert"]["question_embeddings_path"]
+
+    question_dataset = SquadQuestions(config, data_df)
+    if os.path.exists(result_path):
+        result = torch.load(result_path)
+        question_dataset.reduce_to_sample(
+            config["model_parameters"]["bert"]["dataset_percentage"],
+            config["model_parameters"]["bert"]["new_samples_only"],
+            result,
+        )
+    else:
+        question_dataset.reduce_to_sample(
+            config["model_parameters"]["bert"]["dataset_percentage"],
+            config["model_parameters"]["bert"]["new_samples_only"],
+        )
 
     batch_size = config["model_parameters"]["bert"]["batch_size"]
     dataloader = DataLoader(
@@ -102,37 +117,42 @@ def compute_question_embeddings(
         result[questions_idx] = question_embeddings
         torch.save(result, result_path)
 
+    return result
 
-def compute_scores(config):
-    question_embeddings = torch.load(
-        config["model_parameters"]["bert"]["question_embeddings_path"]
-    )
-    context_embeddings = torch.load(
-        config["model_parameters"]["bert"]["context_embeddings_path"]
-    )
 
-    scores = torch.tensordot(
-        question_embeddings, torch.transpose(context_embeddings, 0, 1), dims=1
-    )
+def load_question_embeddings(bert_model, config, data_df):
+    print("Loading question embeddings...")
+    if os.path.exists(config["model_parameters"]["bert"]["question_embeddings_path"]):
+        return torch.load(
+            config["model_parameters"]["bert"]["question_embeddings_path"]
+        )
+    else:
+        return compute_question_embeddings(bert_model, config, data_df)
+
+
+def compute_all_scores(bert_model, config, data_df):
+    question_embeddings = load_question_embeddings(bert_model, config, data_df)
+    context_embeddings = load_context_embeddings(bert_model, config, data_df)
+
+    scores = compute_score(question_embeddings, context_embeddings)
 
     return scores
 
 
-def compute_metrics(config, scores):
-    df = load_squad_to_df(config)
+def compute_score(question_embeddings, context_embeddings):
+    return torch.tensordot(
+        question_embeddings, torch.transpose(context_embeddings, 0, 1), dims=1
+    )
+
+
+def compute_metrics(config, df, scores):
+
     # if the sum of the embedding is 0, we estimate it was not computed
     questions_idx_with_computed_score = list(
         scores.sum(dim=1).nonzero().squeeze().numpy()
     )
-    # inverse of previous list
-    questions_idx_with_NO_computed_score = [
-        idx for idx in df.index if idx not in questions_idx_with_computed_score
-    ]
 
     scores = scores[questions_idx_with_computed_score]
-
-    # df["predicted_context_idx"] = scores.argmax(dim=1)
-    # df.loc[questions_idx_with_NO_computed_score, "predicted_context_idx"] = np.nan
 
     context_idx_array = np.array(
         df.loc[questions_idx_with_computed_score, "context_id"]
