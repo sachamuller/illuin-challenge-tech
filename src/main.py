@@ -15,14 +15,26 @@ from src.models.bert import (
 )
 
 
-def main_bm25(config):
+def evaluate_bm25(config):
     print("Loading dataset...")
-    train_df = load_squad_to_df(config)
-    # test_df = load_squad_to_df(config, test=True)
+    data_df = load_squad_to_df(config)
     print("Loading model...")
-    model = bm25_model(config, train_df)
-    print("Computing recall...")
+    model = bm25_model(config, data_df)
+    print("Metrics :")
     model.compute_recall()
+
+
+def predict_bm25(config):
+    print("Loading dataset...")
+    data_df = load_squad_to_df(config)
+    print("Loading model...")
+    model = bm25_model(config, data_df)
+
+    question = input("Question : ")
+    while len(question) > 0:
+        context = model.predict(question)
+        print(context)
+        question = input("\nQuestion : ")
 
 
 def evaluate_bert(config):
@@ -40,7 +52,7 @@ def evaluate_bert(config):
     compute_metrics(config, data_df, scores)
 
 
-def bert_predict(config):
+def predict_bert(config):
     adapt_path_names(config)
     print("Loading model...")
     bert_model = BertEmbeddings(config)
@@ -68,10 +80,14 @@ if __name__ == "__main__":
     config = yaml.safe_load(open(args.config_path))
 
     if config["model"]["name"] == "bm25":
-        main_bm25(config)
+        if args.predict:
+            predict_bm25(config)
+        else:
+            evaluate_bm25(config)
+
     elif config["model"]["name"] == "bert":
         if args.predict:
-            bert_predict(config)
+            predict_bert(config)
         else:
             evaluate_bert(config)
     else:

@@ -18,7 +18,7 @@ class bm25_model:
     def predict(self, question: str):
         tokenized_question = question.split(" ")
         return self.model.get_top_n(
-            tokenized_question, list(self.data["context"]), n=1
+            tokenized_question, self.data["context"].unique(), n=1
         )[0]
 
     def compute_recall(
