@@ -101,7 +101,7 @@ class SquadQuestions(Dataset):
         return len(self.sample_df.index)
 
     def __getitem__(self, idx):
-        return self.sample_df["question"].iloc[idx]
+        return self.sample_df.iloc[idx].name, self.sample_df["question"].iloc[idx]
 
     def reduce_to_sample(self, frac, new_samples=True):
         if new_samples:

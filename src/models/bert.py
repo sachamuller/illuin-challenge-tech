@@ -79,23 +79,50 @@ def load_context_embeddings(bert_model, config):
     return result
 
 
-def compute_scores(bert_model, question_dataset, config, context_embeddings):
+def compute_question_embeddings(
+    bert_model, question_dataset, config, context_embeddings
+):
+    result_path = config["model_parameters"]["bert"]["question_embeddings_path"]
+
     batch_size = config["model_parameters"]["bert"]["batch_size"]
     dataloader = DataLoader(
         question_dataset,
         batch_size=batch_size,
         shuffle=False,
     )
+    result = torch.zeros(len(question_dataset.full_df.index), bert_model.output_dim)
 
     for batch_idx, batch in enumerate(dataloader):
         print(
             f"Batch_idx : {batch_idx} / {len(question_dataset)//batch_size}", end="\r"
         )
-        question_embeddings = bert_model(batch)
-        scores = torch.tensordot(
-            question_embeddings, torch.transpose(context_embeddings, 0, 1), dims=1
-        )
-        question_dataset.save_batch_scores(batch, scores)
+        questions_idx = batch[0]
+        questions = batch[1]
+        question_embeddings = bert_model(questions)
+        result[questions_idx] = question_embeddings
+        torch.save(result, result_path)
+
+
+def compute_scores(config):
+    question_embeddings = torch.load(
+        config["model_parameters"]["bert"]["question_embeddings_path"]
+    )
+    context_embeddings = torch.load(
+        config["model_parameters"]["bert"]["context_embeddings_path"]
+    )
+    scores_path = config["model_parameters"]["bert"]["similarity_score_path"]
+    import time
+
+    tic = time.time()
+    print("TIC")
+    scores = torch.tensordot(
+        question_embeddings, torch.transpose(context_embeddings, 0, 1), dims=1
+    )
+    touc = time.time() - tic
+    print("TOUC", touc)
+    torch.save(scores, scores_path)
+    tac = time.time() - tic
+    print("TAC", tac)
 
 
 def compute_metrics(config):
