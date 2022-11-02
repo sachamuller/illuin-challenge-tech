@@ -10,11 +10,16 @@ import pandas as pd
 pd.options.mode.chained_assignment = None
 
 
-def load_squad_to_df(config: Dict, test: bool = False):
-    if not test:
+def load_squad_to_df(config: Dict):
+    if config["data_loading"]["evaluate_on_train_or_test"] == "train":
         data_path = config["data_loading"]["train_path"]
-    else:
+    elif config["data_loading"]["evaluate_on_train_or_test"] == "test":
         data_path = config["data_loading"]["test_path"]
+    else:
+        raise ValueError(
+            f"Parameter data_loading.evaluate_on_train_or_test in config should be 'train' or 'test', \
+            got {config['data_loading']['evaluate_on_train_or_test']}"
+        )
     data_json = json.load(open(data_path))["data"]
     df = json_to_dataframe(data_json, config["data_loading"]["drop_impossible"])
     return df
@@ -45,13 +50,14 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
     data_df["title"] = repeated_twice_titles
     data_df["context"] = repeated_context
 
-    if drop_impossible:
-        data_df = data_df[~data_df["is_impossible"]]
-    else:
-        data_df[data_df["is_impossible"]]["answers"] = data_df[
-            data_df["is_impossible"]
-        ]["plausible_answers"]
-    data_df = data_df.drop(columns=["plausible_answers"])
+    if "is_impossible" in data_df.columns:  # means we are dealing with the 2.0 dataset
+        if drop_impossible:
+            data_df = data_df[~data_df["is_impossible"]]
+        else:
+            data_df[data_df["is_impossible"]]["answers"] = data_df[
+                data_df["is_impossible"]
+            ]["plausible_answers"]
+        data_df = data_df.drop(columns=["plausible_answers"])
 
     # A few contexts appear twice in 'paragraphs', with different questions,
     # this is why we group by context instead of assigning an id at paragraphs level
@@ -61,8 +67,8 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
 
 
 class SquadContexts(Dataset):
-    def __init__(self, config, test=False):
-        data_df = load_squad_to_df(config, test)
+    def __init__(self, config):
+        data_df = load_squad_to_df(config)
 
         self.contexts = data_df["context"].unique()
 
