@@ -2,6 +2,9 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import BertTokenizer, BertModel
 import os
+import numpy as np
+import pandas as pd
+from src.data_loading import SquadContexts
 
 
 class BertEmbeddings(torch.nn.Module):
@@ -34,7 +37,7 @@ class BertEmbeddings(torch.nn.Module):
         )
 
 
-def load_context_embeddings(bert_model, context_dataset, config):
+def load_context_embeddings(bert_model, config):
     result_path = config["model_parameters"]["bert"]["context_embeddings_path"]
 
     if os.path.exists(result_path):
@@ -44,8 +47,13 @@ def load_context_embeddings(bert_model, context_dataset, config):
         sum_of_embeddings_per_context = list(result.sum(dim=1).numpy())
         if 0.0 not in sum_of_embeddings_per_context:
             return result  # means the result matrix is already completely computed
+
+        # If we need to continue from the middle :
+        context_dataset = SquadContexts(config)
         start_index = sum_of_embeddings_per_context.index(0.0)
+
     else:
+        context_dataset = SquadContexts(config)
         os.makedirs(os.path.join(*result_path.split("/")[:-1]), exist_ok=True)
         result = torch.zeros(len(context_dataset), bert_model.output_dim)
         start_index = 0
@@ -88,6 +96,29 @@ def compute_scores(bert_model, question_dataset, config, context_embeddings):
             question_embeddings, torch.transpose(context_embeddings, 0, 1), dims=1
         )
         question_dataset.save_batch_scores(batch, scores)
+
+
+def compute_metrics(config):
+    bert_predictions_path = config["model_parameters"]["bert"]["prediction_df_path"]
+    if not os.path.exists(bert_predictions_path):
+        raise FileNotFoundError(
+            f"Scores must be computed in {bert_predictions_path} before computing metrics.\
+            We recommend relaunching the program once with 'display_saved_metrics_only = false' in the config file."
+        )
+    full_df = pd.read_csv(bert_predictions_path)
+    df = full_df[~full_df["scores"].isna()]
+    df["scores"] = df["scores"].apply(eval)
+    df["scores"] = df["scores"].apply(np.array)
+
+    df["predicted_context_id"] = df["scores"].apply(np.argmax)
+    df["rank_of_true_context"] = df.apply(
+        lambda x: list(np.argsort(-x["scores"])).index(x["context_id"]), axis=1
+    )  # the minus sign allows to sort in descending order
+    for i in [1, 5, 10]:
+        print(
+            f"True context in first {i}th contexts : {len(df[df['rank_of_true_context'] < i])} / {len(df.index)}   ({len(df[df['rank_of_true_context'] < i])/len(df.index) * 100}%)"
+        )
+    print("Mean rank of true context :", df["rank_of_true_context"].mean())
 
 
 if __name__ == "__main__":

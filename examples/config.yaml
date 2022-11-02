@@ -15,7 +15,9 @@ model_parameters :
     context_embeddings_path: results/bert_context_embeddings.pt
     prediction_df_path: results/bert_predictions.csv
     batch_size: 2
-    dataset_percentage: 0.1
+    dataset_percentage: 0.0001
+    new_samples_only: true
+    always_compute_questions_embeddings: true # if set to false, the program will compute question embeddings only if none are pre-saved
 
 results :
   parent_folder_path: results/
