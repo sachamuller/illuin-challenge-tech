@@ -11,14 +11,14 @@ pd.options.mode.chained_assignment = None
 
 
 def load_squad_to_df(config: Dict):
-    if config["data_loading"]["evaluate_on_train_or_test"] == "train":
+    if config["data_loading"]["train_or_test"] == "train":
         data_path = config["data_loading"]["train_path"]
-    elif config["data_loading"]["evaluate_on_train_or_test"] == "test":
+    elif config["data_loading"]["train_or_test"] == "test":
         data_path = config["data_loading"]["test_path"]
     else:
         raise ValueError(
-            f"Parameter data_loading.evaluate_on_train_or_test in config should be 'train' or 'test', \
-            got {config['data_loading']['evaluate_on_train_or_test']}"
+            f"Parameter data_loading.train_or_test in config should be 'train' or 'test', \
+            got {config['data_loading']['train_or_test']}"
         )
     data_json = json.load(open(data_path))["data"]
     df = json_to_dataframe(data_json, config["data_loading"]["drop_impossible"])

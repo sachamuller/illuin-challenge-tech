@@ -96,6 +96,7 @@ def compute_question_embeddings(bert_model, config, data_df):
         question_dataset.reduce_to_sample(
             config["model_parameters"]["bert"]["dataset_percentage"],
         )
+        os.makedirs(os.path.join(*result_path.split("/")[:-1]), exist_ok=True)
         result = torch.zeros(len(question_dataset.full_df.index), bert_model.output_dim)
 
     batch_size = config["model_parameters"]["bert"]["batch_size"]
