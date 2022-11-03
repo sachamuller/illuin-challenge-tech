@@ -1,7 +1,7 @@
 # Illuin Challenge Tech
 ---
 
-## :information_desk_person: Project description
+## :paperclip: Project description
 
 The goal of this project is to find the context which will more likely contain the answer to a question, among all the contexts of a dataset. It was conducted as part of the recruitment process of Illuin Technology. 
 
@@ -14,7 +14,7 @@ For each model, the program can be launched in evaluation mode or in predict mod
 
 ---
 
-## :construction: Installation
+## :hammer: Installation
 1. Clone the current repository
 2. We recommand creating a new virtual environment, then installing the required packages with : 
 ```
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 
 ---
-## Usage
+## :ferris_wheel: Usage
 
 To run the program in predict mode use :
 ```bash
@@ -52,31 +52,50 @@ model :
 The other parameters are detailed below. 
 
 ---
-## Configuration file 
+## :art: Configuration file 
 
 - `data_loading`:
-  - `train_or_test`: 'train' or 'test', whether to use the train dataset (`train-vX.X.json`) or the test dataset (`dev-vX.X.json`)
-  - `train_path`: string, path of the train dataset
-  - `test_path`: string, path of the test dataset
-  - `drop_impossible`: boolean, only used for the version 2.0 of the dataset : whether to drop the unanswerable questions, if false, the unanswerable questions are merged with the answerable one.
+  - `train_or_test`: <font color='green'>string</font>, 'train' or 'test', whether to use the train dataset (`train-vX.X.json`) or the test dataset (`dev-vX.X.json`)
+  - `train_path`: <font color='green'>string</font>, path of the train dataset
+  - `test_path`: <font color='green'>string</font>, path of the test dataset
+  - `drop_impossible`: <font color='green'>boolean</font>, only used for the version 2.0 of the dataset : whether to drop the unanswerable questions, if false, the unanswerable questions are merged with the answerable one.
 
 - `model` :
-  - `name`: 'bm25' or 'bert', the model usef
+  - `name`: <font color='green'>string</font>, 'bm25' or 'bert', the model used
 
 - `model_parameters` :
   - `bm25` :
-    - `dataset_percentage`: float, the percentage of questions used to compute the metrics in evaluation mode
+    - `dataset_percentage`: <font color='green'>float</font>, the percentage of questions used to compute the metrics in evaluation mode
   - `bert` :
-    - `pretrained_model_name`: string, value used when calling `BertModel.from_pretrained(pretrained_model_name)`
-    - `context_embeddings_path`: string, path of the `.pt` file in which the embeddings of all the contexts will be saved
-    - `question_embeddings_path`: string, same for question embeddings
-    - `batch_size`: int, batch size used when computing the embeddings (context and question), the results are saved at the end of each batch
-    - `dataset_percentage`: float, the percentage of questions used to compute the metrics in evaluation mode
-    - `compute_more_question_embeddings`: boolean, if false : the first time the program is launched it will compute the embeddings of a percentage of the questions (given by `dataset_percentage`), then the next time it is launched, it will only load the embeddings that were computed the first time. If true : each time the program is launched, it will load the previously computed embeddings and recompute new embeddings (quantity given by `dataset_percentage`) (until eventually all the question embeddings are computed and saved)
+    - `pretrained_model_name`: <font color='green'>string</font>, value used when calling `BertModel.from_pretrained(pretrained_model_name)`
+    - `context_embeddings_path`: <font color='green'>string</font>, path of the `.pt` file in which the embeddings of all the contexts will be saved
+    - `question_embeddings_path`: <font color='green'>string</font>, same for question embeddings
+    - `batch_size`: <font color='green'>int</font>, batch size used when computing the embeddings (context and question), the results are saved at the end of each batch
+    - `dataset_percentage`: <font color='green'>float</font>, the percentage of questions used to compute the metrics in evaluation mode
+    - `compute_more_question_embeddings`: <font color='green'>boolean</font>, if false : the first time the program is launched it will compute the embeddings of a percentage of the questions (given by `dataset_percentage`), then the next time it is launched, it will only load the embeddings that were computed the first time. If true : each time the program is launched, it will load the previously computed embeddings and recompute new embeddings (quantity given by `dataset_percentage`) (until eventually all the question embeddings are computed and saved)
 
-`metrics` : 
-  `list_top_k`: list\[int\], during evaluation, will print the number of questions for which the true context is in the top k predicted contexts
+- `metrics` : 
+  - `list_top_k`: <font color='green'>list\[int\]</font>, during evaluation, will print the number of questions for which the true context is in the top k predicted contexts
 
-`seed` : int, used to get reproducibility, the random aspect of the program being the selection of the questions that will have their embeddings computed when `dataset_percentage` $< 1.0$.
+- `seed` : <font color='green'>int</font>, used to get reproducibility, the random aspect of the program being the selection of the questions that will have their embeddings computed when `dataset_percentage` $< 1.0$.
 
 
+
+---
+## :chart_with_upwards_trend: Results
+
+Results with BM25 : 
+```
+True context is first context : 6178 / 10570   (58.45%)
+True context in first 5th contexts : 7981 / 10570   (75.51%)
+True context in first 10th contexts : 8540 / 10570   (80.79%)
+Mean rank of true context : 66.009
+```
+
+Results with BERT : 
+```
+True context is first context : 1848 / 10570   (17.48%)
+True context in first 5th contexts : 4207 / 10570   (39.8%)
+True context in first 10th contexts : 5420 / 10570   (51.28%)
+Mean rank of true context : 84.995
+```
