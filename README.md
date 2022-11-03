@@ -37,19 +37,16 @@ To run the program in evaluation mode use :
 ```bash
 python -m src.main --evaluate
 ```
-
-The other parameters, including the model used, can be changed in the config file, which is by default `examples/config.yaml`. You can also launch the program using another config file with the `--config_file` argument : 
+The model used to conduct the evaluation or prediction, can be given as so : 
+```bash
+python -m src.main --model bert --predict
+```
+If no model is passed as an argument, the model used will be the default one given in the config file, which is by default `examples/config.yaml`. You can also launch the program using another config file with the `--config_file` argument : 
 ```bash
 python -m src.main --config_file path_of_your_file/config.yaml
 ```
 
-To chose which model to use, you need to modify the `model.name` parameter in the config file : 
-```yaml
-model :
-  name: bm25
-```
-
-The other parameters are detailed below. 
+The other parameters of the config file are detailed below. 
 
 ---
 ## :art: Configuration file 

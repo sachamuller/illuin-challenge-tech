@@ -3,10 +3,14 @@ import argparse
 import yaml
 
 from src.data_loading import load_squad_to_df
-from src.models.bert import (BertEmbeddings, compute_all_scores,
-                             compute_metrics, compute_question_embeddings,
-                             load_context_embeddings,
-                             predict_context_for_one_question)
+from src.models.bert import (
+    BertEmbeddings,
+    compute_all_scores,
+    compute_metrics,
+    compute_question_embeddings,
+    load_context_embeddings,
+    predict_context_for_one_question,
+)
 from src.models.bm25 import bm25_model
 from src.results_file import adapt_path_names
 
@@ -68,20 +72,28 @@ def predict_bert(config):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_path", type=str, default="examples/config.yaml")
+parser.add_argument(
+    "--model", type=str, choices=["config", "bert", "bm25"], default="config"
+)
 parser.add_argument("--predict", action="store_true")
 parser.add_argument("--evaluate", dest="predict", action="store_false")
+
 parser.set_defaults(predict=True)
 if __name__ == "__main__":
     args = parser.parse_args()
     config = yaml.safe_load(open(args.config_path))
 
-    if config["model"]["name"] == "bm25":
+    model_name = (
+        args.model if args.model in ["bert", "bm25"] else config["model"]["name"]
+    )
+
+    if model_name == "bm25":
         if args.predict:
             predict_bm25(config)
         else:
             evaluate_bm25(config)
 
-    elif config["model"]["name"] == "bert":
+    elif model_name == "bert":
         if args.predict:
             predict_bert(config)
         else:
