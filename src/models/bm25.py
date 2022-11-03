@@ -1,7 +1,3 @@
-import os
-import time
-from typing import Union
-
 from rank_bm25 import BM25Okapi
 
 
@@ -15,21 +11,29 @@ class bm25_model:
         self.sample_frac = config["model_parameters"]["bm25"]["dataset_percentage"]
         self.list_top_k = config["metrics"]["list_top_k"]
 
-    def predict(self, question: str):
+    def predict(self, question: str) -> str:
+        """Given a question, returns the context most likely to contain the answer.
+
+        Args:
+            question (str): a question in natural language
+
+        Returns:
+            str: the context most likely to contain the answer
+        """
         tokenized_question = question.split(" ")
         return self.model.get_top_n(
             tokenized_question, self.data["context"].unique(), n=1
         )[0]
 
-    def compute_recall(
+    def compute_metrics(
         self,
-        sample_frac: Union[float, None] = None,
     ):
-        if sample_frac is None:
-            sample_frac = self.sample_frac
-
+        """Compute for each question the rank of the true context, then prints
+        the demanded metrics : how many questions give the true context in the top k
+        predicted ones, and the mean rank of the true context.
+        """
         sampled_data = self.data.sample(
-            frac=sample_frac, random_state=self.random_state
+            frac=self.sample_frac, random_state=self.random_state
         )
         sampled_data["prediction"] = sampled_data["tokenized_question"].apply(
             lambda x: self.model.get_top_n(

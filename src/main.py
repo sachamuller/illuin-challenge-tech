@@ -1,18 +1,14 @@
-import sys
-import yaml
 import argparse
 
+import yaml
+
 from src.data_loading import load_squad_to_df
-from src.results_file import adapt_path_names
+from src.models.bert import (BertEmbeddings, compute_all_scores,
+                             compute_metrics, compute_question_embeddings,
+                             load_context_embeddings,
+                             predict_context_for_one_question)
 from src.models.bm25 import bm25_model
-from src.models.bert import (
-    BertEmbeddings,
-    compute_question_embeddings,
-    compute_all_scores,
-    compute_metrics,
-    predict_context_for_one_question,
-    load_context_embeddings,
-)
+from src.results_file import adapt_path_names
 
 
 def evaluate_bm25(config):
@@ -21,7 +17,7 @@ def evaluate_bm25(config):
     print("Loading model...")
     model = bm25_model(config, data_df)
     print("Metrics :")
-    model.compute_recall()
+    model.compute_metrics()
 
 
 def predict_bm25(config):
@@ -64,7 +60,7 @@ def predict_bert(config):
     question = input("Question : ")
     while len(question) > 0:
         context = predict_context_for_one_question(
-            question, context_embeddings, bert_model, config, data_df
+            question, context_embeddings, bert_model, data_df
         )
         print(context)
         question = input("\nQuestion : ")

@@ -1,16 +1,29 @@
 import json
-import os
-import ast
-from typing import Dict
-from torch.utils.data import Dataset
+from typing import Union
 
 import numpy as np
 import pandas as pd
+import torch
 
 pd.options.mode.chained_assignment = None
 
 
-def load_squad_to_df(config: Dict):
+def load_squad_to_df(config: dict) -> pd.DataFrame:
+    """Returns the SQuAD dataset (train or test according to config),
+    as a pandas dataframe.
+
+    Args:
+        config (dict): config dictionnary coming from yaml file
+
+    Raises:
+        ValueError: if data_loading.train_or_test in config has a value
+        other than 'train' or 'test'
+
+    Returns:
+        pd.DataFrame: DataFrame containing all the contexts, questions and
+        answers. The columns are : 'answers', 'question', 'id', 'title',
+        'context' and 'context_id'
+    """
     if config["data_loading"]["train_or_test"] == "train":
         data_path = config["data_loading"]["train_path"]
     elif config["data_loading"]["train_or_test"] == "test":
@@ -25,7 +38,21 @@ def load_squad_to_df(config: Dict):
     return df
 
 
-def json_to_dataframe(data_json: Dict, drop_impossible: bool):
+def json_to_dataframe(data_json: dict, drop_impossible: bool):
+    """Converts the SQuAD dataset from json to a pd.DataFrame.
+    Works with versions 1.1 and 2.0 of the dataset.
+
+    Args:
+        data_json (dict): the SQuAD dataset as a json (dict)
+        drop_impossible (bool): used only for version 2.0, if true :
+        the unanswerable questions are dropped, if false : the unanswerable
+        questions are merged with the answerable one
+
+    Returns:
+        pd.DataFrame:: DataFrame containing all the contexts, questions and
+        answers. The columns are : 'answers', 'question', 'id', 'title',
+        'context' and 'context_id'
+    """
     data_level = pd.json_normalize(data_json)  # contains title and paragraphs
     repeated_titles = np.repeat(
         data_level["title"].to_numpy(), data_level["paragraphs"].apply(len).to_numpy()
@@ -67,7 +94,11 @@ def json_to_dataframe(data_json: Dict, drop_impossible: bool):
     return data_df
 
 
-class SquadContexts(Dataset):
+class SquadContexts(torch.utils.data.Dataset):
+    """Dataset of the contexts of SQuAD, mainly used
+    when computing the context embeddings.
+    """
+
     def __init__(self, data_df):
 
         self.contexts = data_df["context"].unique()
@@ -78,11 +109,21 @@ class SquadContexts(Dataset):
     def __getitem__(self, idx):
         return self.contexts[idx]
 
-    def truncate_beginning(self, start_index):
+    def truncate_beginning(self, start_index: int):
+        """Removes the beginning of the dataset, so that dataset[start index]
+        is the new first element.
+
+        Args:
+            start_index (int): the index of the new first element
+        """
         self.contexts = self.contexts[start_index:]
 
 
-class SquadQuestions(Dataset):
+class SquadQuestions(torch.utils.data.Dataset):
+    """Dataset of the questions of SQuAD, mainly used
+    when computing the question embeddings.
+    """
+
     def __init__(self, config, data_df):
         self.full_df = data_df
 
@@ -93,16 +134,28 @@ class SquadQuestions(Dataset):
         return len(self.sample_df.index)
 
     def __getitem__(self, idx):
+        # we return both the "name" (= idx of question in the full_df) and the question
+        # to be able to store the embedding at the right row of the result matrix
         return self.sample_df.iloc[idx].name, self.sample_df["question"].iloc[idx]
 
-    def reduce_to_sample(self, frac, previous_scores=None):
-        if previous_scores is None:
+    def reduce_to_sample(
+        self, frac: float, previous_embeddings: Union[torch.Tensor, None] = None
+    ):
+        """Reduces the size of the dataset to a sample of questions whose embedding have not yet
+        been computed. The size of the sample is frac * size initial dataset.
+
+        Args:
+            frac (float): percentage of the initial dataset that will make the sample
+            previous_embeddings (Union[torch.Tensor, None], optional): Tensor containing the question
+            embeddings that were computed during previous runs and saved in a .pt file. Defaults to None.
+        """
+        if previous_embeddings is None:
             self.sample_df = self.full_df.sample(
                 frac=frac, random_state=self.random_state
             )
         else:
             questions_idx_with_computed_score = list(
-                previous_scores.sum(dim=1).nonzero().squeeze().numpy()
+                previous_embeddings.sum(dim=1).nonzero().squeeze().numpy()
             )
             questions_idx_with_NO_computed_score = [
                 idx

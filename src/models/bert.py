@@ -1,10 +1,12 @@
-import torch
-from torch.utils.data import DataLoader
-from transformers import BertTokenizer, BertModel
 import os
+
 import numpy as np
 import pandas as pd
-from src.data_loading import SquadQuestions, SquadContexts, load_squad_to_df
+import torch
+from torch.utils.data import DataLoader
+from transformers import BertModel, BertTokenizer
+
+from src.data_loading import SquadContexts, SquadQuestions
 
 
 class BertEmbeddings(torch.nn.Module):
@@ -23,7 +25,7 @@ class BertEmbeddings(torch.nn.Module):
 
     def forward(self, list_sentences):
         tokenized_sentences = self.tokenizer(list_sentences)
-        # model_output dimensions : batch_size * nb tokens * bert_output_dim (=786)
+        # model_output dimensions : batch_size * nb tokens * bert_output_dim (=768)
         model_output = self.bert(**tokenized_sentences).last_hidden_state.detach()
 
         # to compute dot products between questions and paragraphs we need them all to have the same
@@ -37,7 +39,24 @@ class BertEmbeddings(torch.nn.Module):
         )
 
 
-def load_context_embeddings(bert_model, config, data_df):
+def load_context_embeddings(
+    bert_model: BertEmbeddings, config: dict, data_df: pd.DataFrame
+) -> torch.Tensor:
+    """Returns the context embeddings.
+    If an embedding file is already saved, it is loaded and if all the embeddings
+    are already computed, the resulting tensor is simply returned.
+    If no embedding file exists or it is incomplete (error during previous run),
+    the missing embeddings will be computed and saved.
+
+    Args:
+        bert_model (BertEmbeddings): pretrained BERT model
+        config (dict): config dictionnary coming from yaml file
+        data_df (pd.DataFrame): DataFrame containing the SQuAD dataset
+
+    Returns:
+        torch.Tensor: tensor of size nb_contexts * bert_output_size (=768).
+        The ith row if the embedding of the ith context.
+    """
     print("Loading context embeddings...")
 
     result_path = config["model_parameters"]["bert"]["context_embeddings_path"]
@@ -81,7 +100,24 @@ def load_context_embeddings(bert_model, config, data_df):
     return result
 
 
-def compute_question_embeddings(bert_model, config, data_df):
+def compute_question_embeddings(
+    bert_model: BertEmbeddings, config: dict, data_df: pd.DataFrame
+) -> torch.Tensor:
+    """Compute some question embeddings.
+    If an embedding file is already saved, it is loaded. A sample of questions
+    whose embeddings were not computed during a previous run is drawn and their
+    embeddings are computed and added to the saved file.
+    Same thing if no embeddings were saved, except we start from a blank tensor.
+
+    Args:
+        bert_model (BertEmbeddings): pretrained BERT model
+        config (dict): config dictionnary coming from yaml file
+        data_df (pd.DataFrame): DataFrame containing the SQuAD dataset
+
+    Returns:
+        torch.Tensor: tensor of size nb_questions * bert_output_size (=768)
+        The ith row if the embedding of the ith question.
+    """
 
     result_path = config["model_parameters"]["bert"]["question_embeddings_path"]
 
@@ -119,7 +155,22 @@ def compute_question_embeddings(bert_model, config, data_df):
     return result
 
 
-def load_question_embeddings(bert_model, config, data_df):
+def load_question_embeddings(
+    bert_model: BertEmbeddings, config: dict, data_df: pd.DataFrame
+) -> torch.Tensor:
+    """Returns the question embeddings.
+    If an embedding file is already saved, it is loaded and returned.
+    If no embeddings were saved, the function to compute them is called.
+
+    Args:
+        bert_model (BertEmbeddings): pretrained BERT model
+        config (dict): config dictionnary coming from yaml file
+        data_df (pd.DataFrame): DataFrame containing the SQuAD dataset
+
+    Returns:
+        torch.Tensor: tensor of size nb_questions * bert_output_size (=768)
+        The ith row if the embedding of the ith question.
+    """
     print("Loading question embeddings...")
     if os.path.exists(config["model_parameters"]["bert"]["question_embeddings_path"]):
         return torch.load(
@@ -129,7 +180,20 @@ def load_question_embeddings(bert_model, config, data_df):
         return compute_question_embeddings(bert_model, config, data_df)
 
 
-def compute_all_scores(bert_model, config, data_df):
+def compute_all_scores(
+    bert_model: BertEmbeddings, config: dict, data_df: pd.DataFrame
+) -> torch.Tensor:
+    """Returns a matrix of size nb_questions * nb_contexts such as :
+    scores[i][j] = dot product of the embeddings of the ith question and the jth context
+
+    Args:
+        bert_model (BertEmbeddings): pretrained BERT model
+        config (dict): config dictionnary coming from yaml file
+        data_df (pd.DataFrame): DataFrame containing the SQuAD dataset
+
+    Returns:
+        torch.Tensor: matrix containing the dot products of the embeddings
+    """
     question_embeddings = load_question_embeddings(bert_model, config, data_df)
     context_embeddings = load_context_embeddings(bert_model, config, data_df)
 
@@ -138,13 +202,37 @@ def compute_all_scores(bert_model, config, data_df):
     return scores
 
 
-def compute_score(question_embeddings, context_embeddings):
+def compute_score(
+    question_embeddings: torch.Tensor, context_embeddings: torch.Tensor
+) -> torch.Tensor:
+    """Returns the dot product of some question embeddings with
+    some context embeddings
+
+    Args:
+        question_embeddings (torch.Tensor): tensor such as the ith row
+        is the embedding of the ith question
+        context_embeddings (torch.Tensor): tensor such as the ith row
+        is the embedding of the ith context
+
+    Returns:
+        torch.Tensor: dot product of the two embeddings tensors
+    """
     return torch.tensordot(
         question_embeddings, torch.transpose(context_embeddings, 0, 1), dims=1
     )
 
 
-def compute_metrics(config, df, scores):
+def compute_metrics(config: dict, df: pd.DataFrame, scores: torch.Tensor) -> None:
+    """Compute for each question the rank of the true context, then prints
+    the demanded metrics : how many questions give the true context in the top k
+    predicted ones, and the mean rank of the true context.
+
+    Args:
+        config (dict): config dictionnary coming from yaml file
+        df (pd.DataFrame): DataFrame containing the SQuAD dataset
+        scores (torch.Tensor): tensor of size nb_questions * nb_contexts such as :
+        scores[i][j] = dot product of the embeddings of the ith question and the jth context
+    """
 
     # if the sum of the embedding is 0, we estimate it was not computed
     questions_idx_with_computed_score = list(
@@ -180,8 +268,23 @@ def compute_metrics(config, df, scores):
 
 
 def predict_context_for_one_question(
-    question: str, context_embeddings, bert_model, config, data_df
-):
+    question: str,
+    context_embeddings: torch.Tensor,
+    bert_model: BertEmbeddings,
+    data_df: pd.DataFrame,
+) -> str:
+    """Given a question, returns the context most likely to contain the answer.
+
+    Args:
+        question (str): a question in natural language
+        context_embeddings (torch.Tensor): tensor such as the ith row is the
+        embedding of the ith context.
+        bert_model (BertEmbeddings): pre-trained BERT model
+        data_df (pd.DataFrame): DataFrame containing the SQuAD dataset
+
+    Returns:
+        str: the context most likely to contain the answer
+    """
     question_embeddings = bert_model([question])
     score = compute_score(question_embeddings, context_embeddings)
     predicted_context_id = score.argmax().item()
